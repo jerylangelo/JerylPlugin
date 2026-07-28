@@ -15,8 +15,8 @@ public class HelpCommand implements CommandExecutor {
         if (args.length == 0 || (args.length == 1 && args[0].equalsIgnoreCase("help"))) {
 
             sender.sendMessage(ChatColor.GOLD + "=== JerylPlugin Help ===");
-            sender.sendMessage(ChatColor.YELLOW + "• Throw a Wind Charge to unleash 3 lightning bolts and instant kill mobs!");
-            sender.sendMessage(ChatColor.YELLOW + "• Automatically clears dropped items within a 5-block radius.");
+            sender.sendMessage(ChatColor.YELLOW + "• Throw a Wind Charge to unleash lightning bolts, instant kill mobs and clear items.");
+            sender.sendMessage(ChatColor.YELLOW + "• CocoPops.");
             sender.sendMessage(ChatColor.YELLOW + "• Pilson Poon");
             sender.sendMessage(ChatColor.GOLD + "========================");
 

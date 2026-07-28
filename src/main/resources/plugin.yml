@@ -17,3 +17,7 @@ commands:
     usage: /smite <player>
     permission: jerylplugin.smite
     permission-message: You do not have permission to use this command!
+
+  cocopops:
+    description: Wilson's favourite cereal
+    usage: /cocopops

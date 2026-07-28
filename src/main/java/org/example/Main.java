@@ -6,9 +6,9 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Register event listener
+        // Register event listeners
         getServer().getPluginManager().registerEvents(new WindChargeListener(this), this);
-
+        getServer().getPluginManager().registerEvents(new CocoPopsListener(this), this);
         // Register commands
         if (getCommand("jerylplugin") != null) {
             getCommand("jerylplugin").setExecutor(new HelpCommand());
@@ -22,6 +22,10 @@ public class Main extends JavaPlugin {
         //Register Smite Command
         if(getCommand("smite") != null) {
             getCommand("smite").setExecutor(new SmiteCommand(this));
+        }
+        //register cocopops commmand
+        if (getCommand("cocopops") != null) {
+            getCommand("cocopops").setExecutor(new CocoPopsCommand());
         }
 
         getLogger().info("JerylPlugin enabled!");
