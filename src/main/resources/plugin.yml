@@ -1,5 +1,5 @@
 name: JerylPlugin
-version: 1.0
+version: 1.5
 main: org.example.Main
 api-version: '26.2'
 author: Jeryl Angelo
@@ -10,3 +10,10 @@ commands:
     description: this shit plugin does some shit
     usage: /jerylplugin [help]
     aliases: [jp]
+
+
+  smite:
+    description: You have been a naughty boy
+    usage: /smite <player>
+    permission: jerylplugin.smite
+    permission-message: You do not have permission to use this command!

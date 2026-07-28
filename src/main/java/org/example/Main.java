@@ -19,6 +19,11 @@ public class Main extends JavaPlugin {
             getCommand("help").setExecutor(new HelpCommand());
         }
 
+        //Register Smite Command
+        if(getCommand("smite") != null) {
+            getCommand("smite").setExecutor(new SmiteCommand(this));
+        }
+
         getLogger().info("JerylPlugin enabled!");
     }
 
