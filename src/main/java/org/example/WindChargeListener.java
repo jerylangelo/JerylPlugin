@@ -1,6 +1,7 @@
 package org.example;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -9,12 +10,30 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.WindCharge;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 
 public class WindChargeListener implements Listener {
 
     private static final double RADIUS = 5.0;
+    // Remove Wind Charge Cooldown --
+    @EventHandler
+    public void onWindChargeUse(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        // Check if the player right-clicked air or a block
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
+            // Check if they are holding a Wind Charge in either hand
+            if (player.getInventory().getItemInMainHand().getType() == Material.WIND_CHARGE ||
+                    player.getInventory().getItemInOffHand().getType() == Material.WIND_CHARGE) {
+
+                // Instantly remove the cooldown (set to 0 ticks)
+                player.setCooldown(Material.WIND_CHARGE, 0);
+            }
+        }
+    }
     @EventHandler
     public void onWindChargeHit(ProjectileHitEvent event) {
         // Check if the entity thrown is a Wind Charge
