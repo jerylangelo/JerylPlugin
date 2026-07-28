@@ -100,7 +100,6 @@ public class WindChargeListener implements Listener {
 
                 // Spawn trail particles
                 world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc, 1, 0.1, 0.1, 0.1, 0.02);
-               //world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 5, 0.1, 0.1, 0.1, 0.05);
             }, 0L, 1L);
         }
     }

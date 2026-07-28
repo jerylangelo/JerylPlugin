@@ -75,7 +75,7 @@ public class CocoPopsListener implements Listener {
             if (world == null) return;
 
             // Initial Main Explosion
-            world.createExplosion(hitLoc, 2.5f, false, false); // power, setFire, breakBlocks
+            world.createExplosion(hitLoc, 0.0f, false, false); // power, setFire, breakBlocks
 
             // Spawn 8 Mini Cluster Bomblets
             int clusterAmount = 8;
@@ -110,7 +110,7 @@ public class CocoPopsListener implements Listener {
                     world.spawnParticle(Particle.EXPLOSION_EMITTER, explodeLoc, 1);
 
                     // 2. Custom Radius Damage: Deal 6.0 damage (3 hearts) per bomblet to nearby mobs/players
-                    double damageRadius = 2.5;
+                    double damageRadius = 4;
                     double bombletDamage = 6.0; // 6.0 = 3 Hearts of damage per bomblet
 
                     for (Entity entity : world.getNearbyEntities(explodeLoc, damageRadius, damageRadius, damageRadius)) {
@@ -134,7 +134,7 @@ public class CocoPopsListener implements Listener {
                     droppedItem.remove();
                 }
             }
-        }.runTaskLater(plugin, 10L + random.nextInt(6)); // Slightly randomized delay for pop effect
+        }.runTaskLater(plugin, 30L + random.nextInt(10)); // Slightly randomized delay for pop effect
     }
 
     // --- Helper Method: Check Item Custom Name ---
