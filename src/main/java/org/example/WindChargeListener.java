@@ -84,7 +84,10 @@ public class WindChargeListener implements Listener {
     @EventHandler
     public void onWindChargeLaunch(ProjectileLaunchEvent event) {
         if (event.getEntity() instanceof WindCharge windCharge) {
-
+            // --- MULTIPLY SPEED ---
+            // 2.0 = 2x speed, 3.0 = 3x speed, 5.0 = rocket speed
+            double speedMultiplier = 3.0;
+            windCharge.setVelocity(windCharge.getVelocity().multiply(speedMultiplier));
             Bukkit.getScheduler().runTaskTimer(plugin, (task) -> {
                 // Stop task if the wind charge hits something or is removed
                 if (!windCharge.isValid() || windCharge.isDead()) {
