@@ -1,8 +1,6 @@
 package org.example;
 
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
@@ -12,12 +10,18 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class WindChargeListener implements Listener {
-
+    private final Plugin plugin;
     private static final double RADIUS = 5.0;
+    public WindChargeListener(Plugin plugin) {
+        this.plugin = plugin;
+    }
     // Remove Wind Charge Cooldown --
     @EventHandler
     public void onWindChargeUse(PlayerInteractEvent event) {
@@ -34,6 +38,8 @@ public class WindChargeListener implements Listener {
             }
         }
     }
+
+    //Strike lightning, clear items
     @EventHandler
     public void onWindChargeHit(ProjectileHitEvent event) {
         // Check if the entity thrown is a Wind Charge
@@ -71,6 +77,28 @@ public class WindChargeListener implements Listener {
                     item.remove();
                 }
             }
+        }
+    }
+
+    // --- TRAIL EFFECT: Spawn particles while Wind Charge flies ---
+    @EventHandler
+    public void onWindChargeLaunch(ProjectileLaunchEvent event) {
+        if (event.getEntity() instanceof WindCharge windCharge) {
+
+            Bukkit.getScheduler().runTaskTimer(plugin, (task) -> {
+                // Stop task if the wind charge hits something or is removed
+                if (!windCharge.isValid() || windCharge.isDead()) {
+                    task.cancel();
+                    return;
+                }
+
+                World world = windCharge.getWorld();
+                Location loc = windCharge.getLocation();
+
+                // Spawn trail particles
+                world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc, 1, 0.1, 0.1, 0.1, 0.02);
+               //world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 5, 0.1, 0.1, 0.1, 0.05);
+            }, 0L, 1L);
         }
     }
 }

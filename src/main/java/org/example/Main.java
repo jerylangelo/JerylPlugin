@@ -7,7 +7,7 @@ public class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         // Register event listener
-        getServer().getPluginManager().registerEvents(new WindChargeListener(), this);
+        getServer().getPluginManager().registerEvents(new WindChargeListener(this), this);
 
         // Register commands
         if (getCommand("jerylplugin") != null) {
