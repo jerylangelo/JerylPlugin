@@ -21,3 +21,7 @@ commands:
   cocopops:
     description: Wilson's favourite cereal
     usage: /cocopops
+
+  airstrike:
+    description: Nice!
+    usage: /airstrike

@@ -9,6 +9,7 @@ public class Main extends JavaPlugin {
         // Register event listeners
         getServer().getPluginManager().registerEvents(new WindChargeListener(this), this);
         getServer().getPluginManager().registerEvents(new CocoPopsListener(this), this);
+        getServer().getPluginManager().registerEvents(new AirstrikeListener(this), this);
         // Register commands
         if (getCommand("jerylplugin") != null) {
             getCommand("jerylplugin").setExecutor(new HelpCommand());
@@ -26,6 +27,11 @@ public class Main extends JavaPlugin {
         //register cocopops commmand
         if (getCommand("cocopops") != null) {
             getCommand("cocopops").setExecutor(new CocoPopsCommand());
+        }
+
+        // Register airstrike command
+        if (getCommand("airstrike") != null) {
+            getCommand("airstrike").setExecutor(new AirstrikeCommand());
         }
 
         getLogger().info("JerylPlugin enabled!");
