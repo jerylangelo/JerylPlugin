@@ -1,0 +1,12 @@
+name: JerylPlugin
+version: 1.0
+main: org.example.Main
+api-version: '26.2'
+author: Jeryl Angelo
+description: My first Spigot plugin created in IntelliJ!
+
+commands:
+  jerylplugin:
+    description: this shit plugin does some shit
+    usage: /jerylplugin [help]
+    aliases: [jp]

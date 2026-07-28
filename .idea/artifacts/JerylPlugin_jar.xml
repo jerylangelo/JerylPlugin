@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact name="JerylPlugin:jar">
+    <output-path>$PROJECT_DIR$/../../MinecraftServers/26.2 Spigot Server/plugins</output-path>
+    <root id="root">
+      <element id="archive" name="JerylPlugin.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/../../MinecraftServers/26.2 Spigot Server/plugins/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="JerylPlugin" />
+      </element>
+    </root>
+  </artifact>
+</component>
