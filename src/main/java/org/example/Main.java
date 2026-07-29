@@ -10,6 +10,7 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new WindChargeListener(this), this);
         getServer().getPluginManager().registerEvents(new CocoPopsListener(this), this);
         getServer().getPluginManager().registerEvents(new AirstrikeListener(this), this);
+        getServer().getPluginManager().registerEvents(new SniperRifleListener(this), this);
         // Register commands
         if (getCommand("jerylplugin") != null) {
             getCommand("jerylplugin").setExecutor(new HelpCommand());
@@ -33,6 +34,11 @@ public class Main extends JavaPlugin {
         if (getCommand("airstrike") != null) {
             getCommand("airstrike").setExecutor(new AirstrikeCommand());
         }
+        //Register huntingrifle command
+        if (getCommand("huntingrifle") != null) {
+            getCommand("huntingrifle").setExecutor(new SniperCommand());
+        }
+
 
         getLogger().info("JerylPlugin enabled!");
     }

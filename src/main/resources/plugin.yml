@@ -13,7 +13,7 @@ commands:
 
 
   smite:
-    description: You have been a naughty boy
+    description: For you have been naughty
     usage: /smite <player>
     permission: jerylplugin.smite
     permission-message: You do not have permission to use this command!
@@ -25,3 +25,7 @@ commands:
   airstrike:
     description: Nice!
     usage: /airstrike
+
+  huntingrifle:
+    description: Turns a spyglass into a lucas hunter
+    usage: /huntingrifle
