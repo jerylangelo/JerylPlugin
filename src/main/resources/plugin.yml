@@ -27,5 +27,9 @@ commands:
     usage: /airstrike
 
   huntingrifle:
-    description: Turns a spyglass into a lucas hunter
+    description: Turns an iron horse armor into a lucas hunter
     usage: /huntingrifle
+
+  meteorite:
+    description: Call down a meteorite strike of a given size
+    usage: /meteorite <size>  (1-500)

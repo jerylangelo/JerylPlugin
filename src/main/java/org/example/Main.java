@@ -11,6 +11,7 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CocoPopsListener(this), this);
         getServer().getPluginManager().registerEvents(new AirstrikeListener(this), this);
         getServer().getPluginManager().registerEvents(new SniperRifleListener(this), this);
+        getServer().getPluginManager().registerEvents(new MeteoriteListener(this), this);
         // Register commands
         if (getCommand("jerylplugin") != null) {
             getCommand("jerylplugin").setExecutor(new HelpCommand());
@@ -21,11 +22,11 @@ public class Main extends JavaPlugin {
             getCommand("help").setExecutor(new HelpCommand());
         }
 
-        //Register Smite Command
-        if(getCommand("smite") != null) {
+        // Register Smite Command
+        if (getCommand("smite") != null) {
             getCommand("smite").setExecutor(new SmiteCommand(this));
         }
-        //register cocopops commmand
+        // register cocopops commmand
         if (getCommand("cocopops") != null) {
             getCommand("cocopops").setExecutor(new CocoPopsCommand());
         }
@@ -34,11 +35,14 @@ public class Main extends JavaPlugin {
         if (getCommand("airstrike") != null) {
             getCommand("airstrike").setExecutor(new AirstrikeCommand());
         }
-        //Register huntingrifle command
+        // Register huntingrifle command
         if (getCommand("huntingrifle") != null) {
             getCommand("huntingrifle").setExecutor(new SniperCommand());
         }
-
+        // Register meteorite command
+        if (getCommand("meteorite") != null) {
+            getCommand("meteorite").setExecutor(new MeteoriteCommand(this));
+        }
 
         getLogger().info("JerylPlugin enabled!");
     }

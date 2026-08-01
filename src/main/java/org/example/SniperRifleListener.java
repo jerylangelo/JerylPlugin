@@ -15,6 +15,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -32,8 +34,22 @@ import java.util.UUID;
 
 public class SniperRifleListener implements Listener {
 
+    // Slowness amplifier used purely for its FOV-narrowing (zoom) side effect.
+    private static final int SCOPE_AMPLIFIER = 4; // Slowness V
+    private static final int SCOPE_DURATION = 20 * 60 * 60; // effectively "until toggled/fired"
+
     private final Plugin plugin;
     private final HashMap<UUID, Long> cooldowns = new HashMap<>();
+
+    // Victims killed by the rifle in the last moment -> used to replace the
+    // vanilla death message with our own attributed one. We store the shooter's
+    // name
+    // so attribution survives even a forced kill (creative targets, where damage()
+    // does nothing and no vanilla killer is recorded).
+    private final HashMap<UUID, RifleKill> recentRifleKills = new HashMap<>();
+
+    private record RifleKill(String killerName, long time) {
+    }
 
     public SniperRifleListener(Plugin plugin) {
         this.plugin = plugin;
@@ -44,31 +60,42 @@ public class SniperRifleListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (isHuntingRifle(item)) {
+        if (!isHuntingRifle(item))
+            return;
 
-            // 1. RIGHT-CLICK: Fire Shot
-            if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                event.setCancelled(true);
-                tryShootRifle(player);
-            }
+        // Iron horse armour has no vanilla right/left-click behaviour in hand, so both
+        // clicks arrive as normal interact events that we can handle cleanly.
 
-            // 2. LEFT-CLICK: Toggle/Trigger FOV Zoom Scope
-            else if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                event.setCancelled(true);
-                toggleScopeFOV(player);
-            }
+        // RIGHT-CLICK: toggle the custom FOV zoom scope.
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            event.setCancelled(true); // stop the vanilla spyglass from zooming
+            toggleScope(player);
+            return;
+        }
+
+        // LEFT-CLICK: fire the rifle.
+        if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            event.setCancelled(true);
+            tryShootRifle(player);
         }
     }
 
-    // Toggles/Applies FOV Reduction using Slowness III for 6 seconds (or unscopes if active)
-    private void toggleScopeFOV(Player player) {
+    // Toggles the FOV zoom on/off using Slowness for its zoom side effect.
+    private void toggleScope(Player player) {
         if (player.hasPotionEffect(PotionEffectType.SLOWNESS)) {
             player.removePotionEffect(PotionEffectType.SLOWNESS);
             player.playSound(player.getLocation(), Sound.ITEM_SPYGLASS_STOP_USING, 1.0f, 1.2f);
         } else {
-            // Apply Slowness III (gives ~30% FOV zoom effect) for 120 ticks (6 seconds) -- Note changed amplifier to 5 for more effect
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 5, false, false, false));
+            player.addPotionEffect(new PotionEffect(
+                    PotionEffectType.SLOWNESS, SCOPE_DURATION, SCOPE_AMPLIFIER, false, false, false));
             player.playSound(player.getLocation(), Sound.ITEM_SPYGLASS_USE, 1.0f, 1.0f);
+        }
+    }
+
+    // Clears the scope zoom (called when firing).
+    private void clearScope(Player player) {
+        if (player.hasPotionEffect(PotionEffectType.SLOWNESS)) {
+            player.removePotionEffect(PotionEffectType.SLOWNESS);
         }
     }
 
@@ -95,12 +122,12 @@ public class SniperRifleListener implements Listener {
         world.playSound(eyeLoc, Sound.ITEM_SPYGLASS_STOP_USING, 1.0f, 0.5f);
         player.setVelocity(player.getVelocity().add(direction.clone().multiply(-0.25)));
 
-        // Remove scope FOV effect on firing
-        if (player.hasPotionEffect(PotionEffectType.SLOWNESS)) {
-            player.removePotionEffect(PotionEffectType.SLOWNESS);
-        }
+        // Firing unscopes the rifle
+        clearScope(player);
 
         // 2. Hitscan Raytrace (120 Blocks)
+        // raySize kept small (0.1) so the reported hit position is precise -- a large
+        // ray size inflates every hitbox and makes headshot detection unreliable.
         double maxDistance = 120.0;
         RayTraceResult rayTrace = world.rayTrace(
                 eyeLoc,
@@ -108,9 +135,8 @@ public class SniperRifleListener implements Listener {
                 maxDistance,
                 org.bukkit.FluidCollisionMode.NEVER,
                 true,
-                0.6,
-                (entity) -> entity instanceof LivingEntity && !entity.getUniqueId().equals(player.getUniqueId())
-        );
+                0.1,
+                (entity) -> entity instanceof LivingEntity && !entity.getUniqueId().equals(player.getUniqueId()));
 
         double actualDistance = maxDistance;
         if (rayTrace != null && rayTrace.getHitPosition() != null) {
@@ -130,39 +156,50 @@ public class SniperRifleListener implements Listener {
             target.setNoDamageTicks(0);
 
             // Headshot Detection
-            double targetHeadY = target.getEyeLocation().getY();
-            double hitY = rayTrace.getHitPosition().getY();
-            boolean isHeadshot = Math.abs(targetHeadY - hitY) < 0.5;
+            // Measure the impact height relative to the entity's feet, then compare it
+            // against the entity's own eye height. A hit at (or above) eye level counts
+            // as a headshot, with a small tolerance for the upper neck. This scales
+            // correctly across differently-sized mobs instead of using a flat 0.5 window.
+            double baseY = target.getLocation().getY();
+            double hitRelativeY = rayTrace.getHitPosition().getY() - baseY;
+            double eyeHeight = target.getEyeHeight();
+            double headThreshold = eyeHeight - 0.15; // allow just below the eyes (upper head/neck)
+            boolean isHeadshot = hitRelativeY >= headThreshold;
 
             Location hitLoc = rayTrace.getHitPosition().toLocation(world);
-            boolean dead = false;
 
+            // Deal damage THROUGH the vanilla combat system with the shooter as the
+            // damager, so the kill is properly attributed (killer credit, statistics,
+            // advancements, combat tracker) instead of a silent setHealth(0).
+            double damage = isHeadshot ? 52.0 : 26.0;
             if (isHeadshot) {
-                target.setHealth(0); // Fatal Kill
-                dead = true;
                 player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + "HEADSHOT!");
-            } else {
-                // Bodyshot
-                if (target.getHealth() <= 10.0) {
-                    dead = true;
-                }
-                target.damage(10.0, player);
             }
 
-            // --- KILL EFFECTS & MESSAGES ---
-            if (dead || target.isDead()) {
+            boolean willDie = target.getHealth() - damage <= 0.0;
+
+            // Mark the victim so we can swap in our attributed death message
+            if (willDie) {
+                recentRifleKills.put(target.getUniqueId(),
+                        new RifleKill(player.getName(), System.currentTimeMillis()));
+            }
+
+            // Attribute the kill through the combat system.
+            target.damage(damage, player);
+
+            // Creative-mode players (and otherwise invulnerable targets) ignore damage(),
+            // so force a lethal hit through for them, keeping the rifle effective in
+            // creative like it used to be.
+            if (willDie && target.isValid() && !target.isDead() && target.getHealth() > 0.0) {
+                target.setHealth(0.0);
+            }
+
+            // --- KILL EFFECTS ---
+            if (target.isDead() || willDie) {
                 // A. Spawn Red Firework Explosion Effect
                 spawnRedFirework(hitLoc);
 
-                // B. Broadcast Death Message
-                String targetName = (target instanceof Player victimPlayer)
-                        ? victimPlayer.getName()
-                        : target.getType().name().toLowerCase().replace("_", " ");
-
-                Bukkit.broadcastMessage(ChatColor.RED + "☠ " + ChatColor.YELLOW + targetName
-                        + ChatColor.RED + " was cooked by " + ChatColor.GREEN + player.getName() + "'s rifle!");
-
-                // C. Sound Effects
+                // B. Sound Effects
                 world.playSound(hitLoc, Sound.ENTITY_VILLAGER_DEATH, 2.0f, 0.9f);
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.5f);
             } else {
@@ -171,10 +208,49 @@ public class SniperRifleListener implements Listener {
         }
     }
 
+    // --- Replace the death message for players killed by the rifle ---
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+        RifleKill kill = consumeRifleKill(victim.getUniqueId());
+        if (kill == null)
+            return;
+
+        event.setDeathMessage(ChatColor.RED + "\u2620 " + ChatColor.YELLOW + victim.getName()
+                + ChatColor.RED + " was cooked by " + ChatColor.GREEN + kill.killerName() + "'s rifle!");
+    }
+
+    // --- Announce mob kills (mobs have no vanilla death message) ---
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (victim instanceof Player)
+            return; // handled by onPlayerDeath
+        RifleKill kill = consumeRifleKill(victim.getUniqueId());
+        if (kill == null)
+            return;
+
+        String victimName = victim.getType().name().toLowerCase().replace("_", " ");
+        Bukkit.broadcastMessage(ChatColor.RED + "\u2620 " + ChatColor.YELLOW + victimName
+                + ChatColor.RED + " was cooked by " + ChatColor.GREEN + kill.killerName() + "'s rifle!");
+    }
+
+    // Returns and clears the kill record if this entity was rifle-killed in the
+    // last
+    // 2 seconds, otherwise null.
+    private RifleKill consumeRifleKill(UUID id) {
+        RifleKill kill = recentRifleKills.remove(id);
+        if (kill == null || (System.currentTimeMillis() - kill.time()) >= 2000L) {
+            return null;
+        }
+        return kill;
+    }
+
     // Spawns and immediately detonates a red firework ball
     private void spawnRedFirework(Location loc) {
         World world = loc.getWorld();
-        if (world == null) return;
+        if (world == null)
+            return;
 
         Firework firework = world.spawn(loc, Firework.class);
         FireworkMeta meta = firework.getFireworkMeta();
@@ -196,20 +272,22 @@ public class SniperRifleListener implements Listener {
     }
 
     private boolean isHuntingRifle(ItemStack item) {
-        if (item == null || item.getType() != Material.SPYGLASS || !item.hasItemMeta()) return false;
+        if (item == null || item.getType() != Material.IRON_HORSE_ARMOR || !item.hasItemMeta())
+            return false;
         ItemMeta meta = item.getItemMeta();
         return meta != null && meta.hasDisplayName() && meta.getDisplayName().contains("Hunting Rifle");
     }
 
     public static ItemStack createHuntingRifle() {
-        ItemStack item = new ItemStack(Material.SPYGLASS);
+        ItemStack item = new ItemStack(Material.IRON_HORSE_ARMOR);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.DARK_GREEN + "" + ChatColor.BOLD + "Hunting Rifle");
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GRAY + "Type: " + ChatColor.WHITE + "Sniper Rifle");
-            lore.add(ChatColor.GRAY + "Controls: " + ChatColor.WHITE + "L-Click FOV Zoom | R-Click Fire");
-            lore.add(ChatColor.GRAY + "Damage: " + ChatColor.RED + "10.0 (Body) / INSTANT KILL (Head)");
+            lore.add(ChatColor.GRAY + "Controls: " + ChatColor.WHITE
+                    + "R-Click FOV Zoom | L-Click Fire");
+            lore.add(ChatColor.GRAY + "Damage: " + ChatColor.RED + "26.0 (Body) / 52.0 (Head)");
             meta.setLore(lore);
             item.setItemMeta(meta);
         }

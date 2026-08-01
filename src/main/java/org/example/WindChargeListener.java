@@ -19,9 +19,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class WindChargeListener implements Listener {
     private final Plugin plugin;
     private static final double RADIUS = 5.0;
+
     public WindChargeListener(Plugin plugin) {
         this.plugin = plugin;
     }
+
     // Remove Wind Charge Cooldown --
     @EventHandler
     public void onWindChargeUse(PlayerInteractEvent event) {
@@ -39,7 +41,7 @@ public class WindChargeListener implements Listener {
         }
     }
 
-    //Strike lightning, clear items
+    // Strike lightning, clear items
     @EventHandler
     public void onWindChargeHit(ProjectileHitEvent event) {
         // Check if the entity thrown is a Wind Charge
@@ -57,7 +59,8 @@ public class WindChargeListener implements Listener {
             }
 
             World world = hitLocation.getWorld();
-            if (world == null) return;
+            if (world == null)
+                return;
 
             // Search for all entities within a 5-block radius of the impact
             for (Entity entity : world.getNearbyEntities(hitLocation, RADIUS, RADIUS, RADIUS)) {
@@ -84,9 +87,11 @@ public class WindChargeListener implements Listener {
     @EventHandler
     public void onWindChargeLaunch(ProjectileLaunchEvent event) {
         if (event.getEntity() instanceof WindCharge windCharge) {
-            // --- MULTIPLY SPEED ---
-            // 2.0 = 2x speed, 3.0 = 3x speed, 5.0 = rocket speed
-            double speedMultiplier = 3.0;
+            // --- ADJUST SPEED ---
+            // Values below 1.0 slow the wind charge down so it's actually visible in
+            // flight.
+            // 1.0 = default speed, 0.5 = half speed, 0.3 = slow lob.
+            double speedMultiplier = 1.5;
             windCharge.setVelocity(windCharge.getVelocity().multiply(speedMultiplier));
             Bukkit.getScheduler().runTaskTimer(plugin, (task) -> {
                 // Stop task if the wind charge hits something or is removed
