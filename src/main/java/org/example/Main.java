@@ -12,6 +12,8 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AirstrikeListener(this), this);
         getServer().getPluginManager().registerEvents(new SniperRifleListener(this), this);
         getServer().getPluginManager().registerEvents(new MeteoriteListener(this), this);
+        getServer().getPluginManager().registerEvents(new BoatStepListener(this), this);
+
         // Register commands
         if (getCommand("jerylplugin") != null) {
             getCommand("jerylplugin").setExecutor(new HelpCommand());
