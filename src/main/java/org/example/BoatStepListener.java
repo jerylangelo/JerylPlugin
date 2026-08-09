@@ -2,6 +2,8 @@ package org.example;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
@@ -37,6 +39,12 @@ public class BoatStepListener implements Listener {
             return;
         }
 
+        // FIX: Grab world safely and null-check to prevent NPE warning
+        World world = boat.getWorld();
+        if (world == null) {
+            return;
+        }
+
         UUID boatId = boat.getUniqueId();
         long currentTime = System.currentTimeMillis();
 
@@ -67,6 +75,12 @@ public class BoatStepListener implements Listener {
             boat.eject();
 
             if (boat.teleport(stepLoc)) {
+
+                // --- SPARK EFFECT 1: Initial contact burst ---
+                Location sparkOrigin = stepLoc.clone().add(0, 0.2, 0);
+                world.spawnParticle(Particle.CRIT, sparkOrigin, 20, 0.3, 0.2, 0.3, 0.15);
+                world.spawnParticle(Particle.FIREWORK, sparkOrigin, 10, 0.2, 0.1, 0.2, 0.08);
+
                 // Re-mount player after 3 ticks
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     for (Entity passenger : passengers) {
@@ -75,7 +89,7 @@ public class BoatStepListener implements Listener {
                         }
                     }
 
-                    // Multi-tick velocity task: Push boat for 6 ticks (~0.3s) to prevent client stopping
+                    // Multi-tick velocity task with trailing sparks
                     new BukkitRunnable() {
                         int ticksRun = 0;
 
@@ -86,12 +100,17 @@ public class BoatStepListener implements Listener {
                                 return;
                             }
 
-                            // Keep pushing forward on every tick until client catches up
+                            // Keep pushing forward
                             Vector forwardVelocity = direction.clone().multiply(0.45).setY(0.02);
                             boat.setVelocity(forwardVelocity);
+
+                            // --- SPARK EFFECT 2: Trailing sparks ---
+                            Location trailLoc = boat.getLocation().add(0, 0.1, 0);
+                            world.spawnParticle(Particle.CRIT, trailLoc, 5, 0.2, 0.05, 0.2, 0.1);
+
                             ticksRun++;
                         }
-                    }.runTaskTimer(plugin, 0L, 1L); // Run immediately, repeat every tick
+                    }.runTaskTimer(plugin, 0L, 1L);
 
                 }, 3L);
             }
