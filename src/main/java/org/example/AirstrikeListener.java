@@ -2,6 +2,7 @@ package org.example;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -44,7 +45,7 @@ public class AirstrikeListener implements Listener {
         this.plugin = plugin;
     }
 
-    // --- 1. Throw the Redstone Torch marker and wait for it to land ---
+    // --- 1. Right-click to throw the airstrike marker ---
     @EventHandler
     public void onLaunch(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -54,13 +55,19 @@ public class AirstrikeListener implements Listener {
 
             if (isAirstrike(item)) {
                 event.setCancelled(true);
+
+                // Consume 1 from hand if not in creative mode
+                if (player.getGameMode() != GameMode.CREATIVE) {
+                    item.setAmount(item.getAmount() - 1);
+                }
+
                 launchMarker(player.getWorld(), player.getEyeLocation(),
                         player.getLocation().getDirection().multiply(1.2));
             }
         }
     }
 
-    // --- QOL: Throw the Airstrike marker out of a dispenser ---
+    // --- QOL: Fire the airstrike marker out of a dispenser ---
     @EventHandler
     public void onDispense(BlockDispenseEvent event) {
         if (!isAirstrike(event.getItem()))
@@ -124,8 +131,7 @@ public class AirstrikeListener implements Listener {
         }
     }
 
-    // --- 2. Detect the marker landing, then (after a short delay) trigger the
-    // strike ---
+    // --- 2. Detect the marker landing, then trigger the strike after 1 second ---
     private void trackMarkerUntilLanded(Item marker) {
         new BukkitRunnable() {
             int ticksAlive = 0;
@@ -155,7 +161,7 @@ public class AirstrikeListener implements Listener {
 
                     Location targetLoc = marker.getLocation().clone();
 
-                    // 1 - 2 second delay before the lightning strike (30 ticks = 1.5s)
+                    // 1 second delay (20 ticks) before lightning strikes and the airstrike begins
                     new BukkitRunnable() {
                         @Override
                         public void run() {
@@ -165,7 +171,7 @@ public class AirstrikeListener implements Listener {
                             }
                             triggerAirstrike(targetLoc.getWorld(), targetLoc);
                         }
-                    }.runTaskLater(plugin, 30L);
+                    }.runTaskLater(plugin, 20L);
                     return;
                 }
 
@@ -174,57 +180,22 @@ public class AirstrikeListener implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    // --- 3. The airstrike sequence: Lightning, Laser, Siren, Jet Flyover &
-    // Artillery ---
+    // --- 3. The airstrike sequence: Lightning, Siren & Artillery ---
     private void triggerAirstrike(World world, Location targetLoc) {
         if (world == null)
             return;
 
-        // Lightning Bolt Visual
+        // Cosmetic lightning — no entity damage, no fire
         world.strikeLightningEffect(targetLoc);
 
-        // Signal Smoke
+        // Signal smoke
         world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, targetLoc, 50, 0.2, 0.5, 0.2, 0.05);
 
-        // 1. Activate Red Laser Column for 2.5s
-        spawnRedLaserBeam(world, targetLoc, 50);
-
-        // 2. Play warning siren
+        // Warning siren
         playWarningSiren(world, targetLoc);
 
-        // 3. Trigger Jet Flyover + Bombardment after 2.5s delay
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                simulateJetFlyover(world, targetLoc);
-                startArtilleryRain(world, targetLoc);
-            }
-        }.runTaskLater(plugin, 50L);
-    }
-
-    // --- Red Laser Beam Column ---
-    private void spawnRedLaserBeam(World world, Location targetLoc, int durationTicks) {
-        Particle.DustOptions redLaser = new Particle.DustOptions(Color.fromRGB(255, 0, 0), 1.8f);
-
-        new BukkitRunnable() {
-            int ticksElapsed = 0;
-
-            @Override
-            public void run() {
-                if (ticksElapsed >= durationTicks) {
-                    this.cancel();
-                    return;
-                }
-
-                // Render red particle column 35 blocks high
-                for (int y = 0; y < 35; y += 1) {
-                    Location beamPoint = targetLoc.clone().add(0, y, 0);
-                    world.spawnParticle(Particle.DUST, beamPoint, 2, 0.05, 0.05, 0.05, 0.0, redLaser);
-                }
-
-                ticksElapsed += 2;
-            }
-        }.runTaskTimer(plugin, 0L, 2L);
+        // Start artillery rain immediately
+        startArtilleryRain(world, targetLoc);
     }
 
     // --- Warning Siren ---
@@ -242,32 +213,6 @@ public class AirstrikeListener implements Listener {
                 beeps++;
             }
         }.runTaskTimer(plugin, 0L, 8L);
-    }
-
-    // --- Jet Fighter Flyover (Contrails & Short Sound Cutoff) ---
-    private void simulateJetFlyover(World world, Location targetLoc) {
-        // Play boosted jet sound
-        world.playSound(targetLoc, Sound.ENTITY_FIREWORK_ROCKET_BLAST_FAR, 10.0f, 0.5f);
-        world.playSound(targetLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 10.0f, 0.6f);
-
-        // Jet contrails across the sky
-        new BukkitRunnable() {
-            int step = -25;
-
-            @Override
-            public void run() {
-                if (step > 25) {
-                    this.cancel();
-                    return;
-                }
-
-                Location jetPos = targetLoc.clone().add(step * 2, 35, 0);
-                world.spawnParticle(Particle.CLOUD, jetPos, 10, 0.3, 0.3, 0.3, 0.02);
-                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, jetPos, 5, 0.2, 0.2, 0.2, 0.01);
-
-                step += 2;
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     // --- Rain Fence Bombs from Sky ---
@@ -334,7 +279,7 @@ public class AirstrikeListener implements Listener {
                     ticks++;
                     if (bomb.isOnGround() || ticks > 200) {
                         detonated = true;
-                        bomb.remove();
+                        bomb.remove(); // Fence disappears right before the explosion
                         detonateFenceBomb(world, last);
                         this.cancel();
                     }

@@ -46,6 +46,25 @@ public class Main extends JavaPlugin {
             getCommand("meteorite").setExecutor(new MeteoriteCommand(this));
         }
 
+        // Register doomworld command
+        if (getCommand("doomworld") != null) {
+            DoomWorldCommand doomWorldCommand = new DoomWorldCommand(this);
+            getCommand("doomworld").setExecutor(doomWorldCommand);
+            getCommand("doomworld").setTabCompleter(doomWorldCommand);
+        }
+        // Register newworld command
+        if (getCommand("newworld") != null) {
+            NewWorldCommand newWorldCommand = new NewWorldCommand();
+            getCommand("newworld").setExecutor(newWorldCommand);
+            getCommand("newworld").setTabCompleter(newWorldCommand);
+        }
+        // Register deleteworld command
+        if (getCommand("deleteworld") != null) {
+            DeleteWorldCommand deleteWorldCommand = new DeleteWorldCommand();
+            getCommand("deleteworld").setExecutor(deleteWorldCommand);
+            getCommand("deleteworld").setTabCompleter(deleteWorldCommand);
+        }
+
         getLogger().info("JerylPlugin enabled!");
     }
 

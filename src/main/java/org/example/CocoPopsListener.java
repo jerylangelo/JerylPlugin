@@ -1,6 +1,7 @@
 package org.example;
 
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -52,6 +53,12 @@ public class CocoPopsListener implements Listener {
             // Check if the item held is our special CocoPops item
             if (isCocoPops(item)) {
                 event.setCancelled(true);
+
+                // Consume 1 from hand if not in creative mode
+                if (player.getGameMode() != GameMode.CREATIVE) {
+                    item.setAmount(item.getAmount() - 1);
+                }
+
                 launchCluster(player.getWorld(), player.getEyeLocation(),
                         player.getLocation().getDirection().multiply(1.8));
             }
@@ -177,32 +184,32 @@ public class CocoPopsListener implements Listener {
         }.runTaskLater(plugin, 16L);
     }
 
-    // --- Stage 2: Split into multiple cocoa beans fired in random directions ---
+    // --- Stage 2: Split into multiple melon-seed bomblets fired in random directions ---
     private void splitIntoBomblets(World world, Location origin) {
-        int clusterAmount = 8; // number of cocoa-bean bomblets
-        double baseSpeed = 12.0; // base launch power (scaled down by RNG below)
+        int clusterAmount = 8; // number of melon-seed bomblets
+        double baseSpeed = 12.0; // base launch power
 
         world.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.6f);
         world.spawnParticle(Particle.CRIT, origin, 20, 0.2, 0.2, 0.2, 0.2);
 
         for (int i = 0; i < clusterAmount; i++) {
-            // RNG direction based on the CrackShot cluster-bomb model: mostly-upward pitch,
-            // random yaw
+            // Fully random direction: uniform yaw across 360°, pitch from nearly
+            // horizontal (-10°) to steeply upward (-80°) for wide scatter
             Location dirLoc = origin.clone();
-            dirLoc.setPitch(-(random.nextInt(90) + random.nextInt(90)));
-            dirLoc.setYaw(random.nextInt(360));
+            dirLoc.setPitch(-(10 + random.nextFloat() * 70));
+            dirLoc.setYaw(random.nextFloat() * 360f);
 
-            // Speed with random falloff so each bomblet travels a different distance
-            double speed = baseSpeed * (100 - random.nextInt(25) - random.nextInt(25)) * 0.001D;
+            // Speed with wider variance so each bomblet travels a different distance
+            double speed = baseSpeed * (0.3 + random.nextDouble() * 0.7);
             Vector velocity = dirLoc.getDirection().multiply(speed);
 
             spawnBomblet(world, origin.clone(), velocity);
         }
     }
 
-    // --- Helper Method: Launch a single cocoa-bean bomblet that explodes ---
+    // --- Helper Method: Launch a single melon-seed bomblet that explodes ---
     private void spawnBomblet(World world, Location origin, Vector velocity) {
-        Item droppedItem = world.dropItem(origin, new ItemStack(Material.COCOA_BEANS));
+        Item droppedItem = world.dropItem(origin, new ItemStack(Material.MELON_SEEDS));
         droppedItem.setPickupDelay(Integer.MAX_VALUE); // Prevent players from picking it up
         droppedItem.setVelocity(velocity);
 
@@ -246,7 +253,7 @@ public class CocoPopsListener implements Listener {
                 // Remove item entity
                 droppedItem.remove();
             }
-        }.runTaskLater(plugin, 30L + random.nextInt(11)); // Randomized 1.5s - 2.0s delay for pop effect
+        }.runTaskLater(plugin, 20L + random.nextInt(31)); // Randomized 1.0s - 2.5s delay for pop effect
     }
 
     // --- Helper Method: Check Item Custom Name ---

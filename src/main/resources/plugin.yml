@@ -1,7 +1,7 @@
 name: JerylPlugin
-version: 1.5
+version: 1.6
 main: org.example.Main
-api-version: '26.2'
+api-version: "26.2"
 author: Jeryl Angelo
 description: My first Spigot plugin created in IntelliJ!
 
@@ -10,7 +10,6 @@ commands:
     description: this shit plugin does some shit
     usage: /jerylplugin [help]
     aliases: [jp]
-
 
   smite:
     description: For you have been naughty
@@ -33,3 +32,21 @@ commands:
   meteorite:
     description: Call down a meteorite strike of a given size
     usage: /meteorite <size>  (1-500)
+
+  doomworld:
+    description: Bring doom upon the world
+    usage: /doomworld [responsible]
+    permission: jerylplugin.doomworld
+    permission-message: You do not have permission to use this command!
+
+  newworld:
+    description: Create a new world
+    usage: /newworld <worldname> [overworld|nether|end]
+    permission: jerylplugin.newworld
+    permission-message: You do not have permission to use this command!
+
+  deleteworld:
+    description: Delete a world
+    usage: /deleteworld <worldname>
+    permission: jerylplugin.deleteworld
+    permission-message: You do not have permission to use this command!

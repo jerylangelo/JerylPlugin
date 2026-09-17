@@ -28,6 +28,14 @@ public class HelpCommand implements CommandExecutor {
             sender.sendMessage(ChatColor.GRAY
                     + "    Craters bigger than size 5 auto-heal after a delay. Add NO_ROLLBACK to make the damage permanent.");
             sender.sendMessage(ChatColor.YELLOW + "* /smite <player>: smite a naughty player.");
+            sender.sendMessage(ChatColor.YELLOW
+                    + "* /doomworld: unleash unregulated TNT destruction across the world.");
+            sender.sendMessage(ChatColor.GRAY
+                    + "    Use /doomworld responsible to surgically destroy the world while keeping 20 TPS.");
+            sender.sendMessage(ChatColor.YELLOW
+                    + "* /newworld <name> [overworld|nether|end]: create a new world and teleport there.");
+            sender.sendMessage(ChatColor.YELLOW
+                    + "* /deleteworld <name>: delete a world (cannot delete the default world).");
             sender.sendMessage(ChatColor.GOLD + "========================");
 
             return true;
