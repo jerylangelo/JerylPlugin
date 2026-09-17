@@ -1,11 +1,25 @@
 package org.example;
 
+import org.bukkit.Bukkit;
+import org.bukkit.WorldCreator;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.List;
 
 public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Save default config if it doesn't exist
+        saveDefaultConfig();
+
+        // Load worlds from config
+        List<String> worlds = getConfig().getStringList("worlds");
+        for (String worldName : worlds) {
+            getLogger().info("Loading world: " + worldName);
+            Bukkit.createWorld(new WorldCreator(worldName));
+        }
+
         // Register event listeners
         getServer().getPluginManager().registerEvents(new WindChargeListener(this), this);
         getServer().getPluginManager().registerEvents(new CocoPopsListener(this), this);
@@ -54,15 +68,21 @@ public class Main extends JavaPlugin {
         }
         // Register newworld command
         if (getCommand("newworld") != null) {
-            NewWorldCommand newWorldCommand = new NewWorldCommand();
+            NewWorldCommand newWorldCommand = new NewWorldCommand(this);
             getCommand("newworld").setExecutor(newWorldCommand);
             getCommand("newworld").setTabCompleter(newWorldCommand);
         }
         // Register deleteworld command
         if (getCommand("deleteworld") != null) {
-            DeleteWorldCommand deleteWorldCommand = new DeleteWorldCommand();
+            DeleteWorldCommand deleteWorldCommand = new DeleteWorldCommand(this);
             getCommand("deleteworld").setExecutor(deleteWorldCommand);
             getCommand("deleteworld").setTabCompleter(deleteWorldCommand);
+        }
+        // Register world command
+        if (getCommand("world") != null) {
+            WorldCommand worldCommand = new WorldCommand();
+            getCommand("world").setExecutor(worldCommand);
+            getCommand("world").setTabCompleter(worldCommand);
         }
 
         getLogger().info("JerylPlugin enabled!");

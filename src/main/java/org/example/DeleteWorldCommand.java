@@ -10,12 +10,20 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
+import org.bukkit.plugin.Plugin;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class DeleteWorldCommand implements CommandExecutor, TabCompleter {
+
+    private final Plugin plugin;
+
+    public DeleteWorldCommand(Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -62,6 +70,14 @@ public class DeleteWorldCommand implements CommandExecutor, TabCompleter {
 
         // Recursively delete the world folder
         deleteDirectory(worldFolder);
+
+        // Remove from config so it doesn't try to load next startup
+        List<String> worlds = plugin.getConfig().getStringList("worlds");
+        if (worlds.contains(worldName)) {
+            worlds.remove(worldName);
+            plugin.getConfig().set("worlds", worlds);
+            plugin.saveConfig();
+        }
 
         player.sendMessage(ChatColor.GREEN + "World '" + ChatColor.YELLOW + worldName
                 + ChatColor.GREEN + "' has been deleted.");

@@ -1,5 +1,5 @@
 name: JerylPlugin
-version: 1.6
+version: 1.7
 main: org.example.Main
 api-version: "26.2"
 author: Jeryl Angelo
@@ -50,3 +50,7 @@ commands:
     usage: /deleteworld <worldname>
     permission: jerylplugin.deleteworld
     permission-message: You do not have permission to use this command!
+
+  world:
+    description: Teleport to a world
+    usage: /world <worldname>

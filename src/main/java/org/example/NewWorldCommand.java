@@ -9,6 +9,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;
 
 import java.util.ArrayList;
@@ -17,6 +18,12 @@ import java.util.List;
 public class NewWorldCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> WORLD_TYPES = List.of("overworld", "nether", "end");
+
+    private final Plugin plugin;
+
+    public NewWorldCommand(Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -66,6 +73,14 @@ public class NewWorldCommand implements CommandExecutor, TabCompleter {
         World newWorld = Bukkit.createWorld(creator);
 
         if (newWorld != null) {
+            // Persist this world to config so it auto-loads on server restart
+            List<String> worlds = plugin.getConfig().getStringList("worlds");
+            if (!worlds.contains(worldName)) {
+                worlds.add(worldName);
+                plugin.getConfig().set("worlds", worlds);
+                plugin.saveConfig();
+            }
+
             player.sendMessage(ChatColor.GREEN + "World '" + ChatColor.YELLOW + worldName
                     + ChatColor.GREEN + "' created successfully! ("
                     + ChatColor.GOLD + typeArg + ChatColor.GREEN + ")");
