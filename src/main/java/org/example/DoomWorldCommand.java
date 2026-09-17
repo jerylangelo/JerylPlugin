@@ -64,17 +64,17 @@ public class DoomWorldCommand implements CommandExecutor, TabCompleter {
         for (Chunk chunk : loadedChunks) {
             int baseX = chunk.getX() << 4; // chunk coord * 16
             int baseZ = chunk.getZ() << 4;
-            int maxY = world.getMaxHeight();
 
-            // Spawn TNT every 4 blocks across X, Z and every 8 blocks on Y
+            // Spawn one TNT per column at the surface — skip all-air columns
             for (int x = baseX; x < baseX + 16; x += 4) {
                 for (int z = baseZ; z < baseZ + 16; z += 4) {
-                    for (int y = world.getMinHeight(); y < maxY; y += 8) {
-                        Location loc = new Location(world, x + 0.5, y + 0.5, z + 0.5);
-                        TNTPrimed tnt = (TNTPrimed) world.spawnEntity(loc, EntityType.TNT);
-                        tnt.setFuseTicks(20 + (tntCount % 60)); // stagger fuses slightly for maximum carnage
-                        tntCount++;
-                    }
+                    int highestY = world.getHighestBlockYAt(x, z);
+                    if (highestY <= world.getMinHeight()) continue; // all air, skip
+
+                    Location loc = new Location(world, x + 0.5, highestY + 1.0, z + 0.5);
+                    TNTPrimed tnt = (TNTPrimed) world.spawnEntity(loc, EntityType.TNT);
+                    tnt.setFuseTicks(20 + (tntCount % 60)); // stagger fuses for rolling carnage
+                    tntCount++;
                 }
             }
         }
@@ -100,22 +100,20 @@ public class DoomWorldCommand implements CommandExecutor, TabCompleter {
         world.setGameRule(GameRule.BLOCK_DROPS, false);
         world.setGameRule(GameRule.ENTITY_DROPS, false);
 
-        // Step 2: Build the explosion queue from all loaded chunks
-        // Grid spacing of ~5 blocks apart on X/Z, covering full Y range at intervals
+        // Step 2: Build the explosion queue — one explosion per column at the surface
         Chunk[] loadedChunks = world.getLoadedChunks();
         Queue<Location> locationQueue = new LinkedList<>();
 
         for (Chunk chunk : loadedChunks) {
             int baseX = chunk.getX() << 4;
             int baseZ = chunk.getZ() << 4;
-            int minY = world.getMinHeight();
-            int maxY = world.getMaxHeight();
 
             for (int x = baseX; x < baseX + 16; x += 5) {
                 for (int z = baseZ; z < baseZ + 16; z += 5) {
-                    for (int y = minY; y < maxY; y += 5) {
-                        locationQueue.add(new Location(world, x + 0.5, y + 0.5, z + 0.5));
-                    }
+                    int highestY = world.getHighestBlockYAt(x, z);
+                    if (highestY <= world.getMinHeight()) continue; // all air, skip
+
+                    locationQueue.add(new Location(world, x + 0.5, highestY + 0.5, z + 0.5));
                 }
             }
         }
